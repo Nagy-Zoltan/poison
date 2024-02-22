@@ -1,15 +1,15 @@
 import poison
 
-print(100)
+print('hello')
+
+poison.poison('print', 'abs', 'X')
 
 
-poison.poison('print')
 
-
-
+X = 100
 
 
 def foo():
     if True:
-        print(1)
+        1
 

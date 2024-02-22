@@ -28,11 +28,11 @@ def poison(*names):
 	with tokenize.open(poisoned_file) as f:
 		tokens = tokenize.generate_tokens(f.readline)
 		for _ in range(start_line):
-			next(tokens)
+			next(f)
 		for t in tokens:
 			if t.type == token.NAME and t.string in poisoned_names:
 				raise RuntimeError(
-					f'Poisoned name "{t.string}" found on line {t.start[0]}!'
+					f'Poisoned name "{t.string}" found on line {start_line + t.start[0]}!'
 				)
 
 
