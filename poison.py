@@ -42,7 +42,8 @@ def get_imports(bytecode: dis.Bytecode, imports: defaultdict = None, visited_cod
 
 
 def filter_imports(imports: defaultdict, start_line: int = 0) -> set:
-	del imports[__MODULE__]
+	if __MODULE__ in imports:
+		del imports[__MODULE__]
 	for import_name, line_numbers in imports.items():
 		filtered_line_numbers = {ln for ln in line_numbers if ln > start_line}
 		imports[import_name] = filtered_line_numbers
