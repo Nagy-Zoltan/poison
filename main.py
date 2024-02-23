@@ -2,14 +2,14 @@ import poison
 
 print('hello')
 
+import pickle
+
 poison.poison('print', 'abs', 'X')
 
 
 
-X = 100
-
-
 def foo():
     if True:
-        1
-
+        import re
+    import os
+    print('hello')
