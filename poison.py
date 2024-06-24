@@ -21,8 +21,9 @@ ignored_contexts = {
 }
 
 marked_import_sources = {
+	__file__,
 	'frozen',
-	'built-in'
+	'built-in',
 }
 
 
