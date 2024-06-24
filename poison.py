@@ -1,13 +1,17 @@
 from collections import defaultdict
 import dis
+from importlib.util import find_spec
 import inspect
-import os
+from pathlib import Path
+import sys
 import token
 import tokenize
 from types import CodeType
 
 
-__MODULE__ = __file__.split(os.sep)[-1].split('.')[0]
+__MODULE__ = (p := Path(__file__)).name.removesuffix(p.suffix)
+
+_BUILTIN_FOLDER = str(Path(sys.executable).parent.joinpath('Lib'))
 
 
 ignored_contexts = {
@@ -16,9 +20,10 @@ ignored_contexts = {
 	'<frozen importlib._bootstrap_external>'
 }
 
-ignored_import_sources = ()
-
-checked_source_paths = set()
+marked_import_sources = {
+	'frozen',
+	'built-in'
+}
 
 
 def get_bytecode(file_path: str) -> dis.Bytecode:
@@ -61,11 +66,17 @@ def filter_import_names(import_names: defaultdict, start_line: int = 0) -> set:
 	return {import_name for import_name, line_numbers in import_names.items() if line_numbers}
 
 
-def get_import_source_path(import_name: str) -> str:
-	pass
+def get_import_source_path(import_name: str) -> str | None:
+	spec = find_spec(import_name)
+	if spec is None:
+		return
+	return spec.origin
 
 
-def check_import_path(import_path: str):
+def check_import_path(import_path: str) -> bool:
+	if import_path in marked_import_sources:
+		return False
+	marked_import_sources.add(import_path)
 	return True
 
 
@@ -78,7 +89,7 @@ def get_poison_context(filename: str = None):
 			return filename, frame.positions.lineno
 
 
-def poison(*names: list[str], recursive: bool = True, filename: str = None):
+def poison(*names: list[str], filename: str = None, recursive: bool = True):
 	poisoned_file, start_line = get_poison_context(filename=filename)
 	poisoned_names = set(names)
 	with tokenize.open(poisoned_file) as f:
@@ -92,7 +103,7 @@ def poison(*names: list[str], recursive: bool = True, filename: str = None):
 				)
 
 	print(f'{poisoned_file} is clean')
-	checked_source_paths.add(poisoned_file)
+	marked_import_sources.add(poisoned_file)
 	if recursive:
 		file_bytecode = get_bytecode(poisoned_file)
 		imports = get_import_names(bytecode=file_bytecode)
@@ -101,8 +112,11 @@ def poison(*names: list[str], recursive: bool = True, filename: str = None):
 		print(f'Checking imports: {filtered_imports}')
 		for import_name in filtered_imports:
 			import_path = get_import_source_path(import_name)
+			print(f'{import_path = }')
+			if import_path is None:
+				continue
 			if check_import_path(import_path=import_path):
-				poison(*poisoned_names, recursive=recursive, filename=import_path)
+				poison(*poisoned_names, filename=import_path, recursive=True)
 
 
 if __name__ == '__main__':
