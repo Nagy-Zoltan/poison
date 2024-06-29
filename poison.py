@@ -11,7 +11,7 @@ from types import CodeType
 
 __MODULE__ = (p := Path(__file__)).name.removesuffix(p.suffix)
 
-_BUILTIN_FOLDER = str(Path(sys.executable).parent.joinpath('Lib'))
+_LIB_FOLDER = str(Path(sys.executable).parent.joinpath('Lib'))
 
 
 ignored_contexts = {
@@ -49,10 +49,10 @@ def get_import_names(
 			import_names[argval].add(instr.positions.lineno)
 		elif isinstance(argval, CodeType) and argval not in visited_codes:
 			visited_codes.add(argval)
-			nested_imports_names = get_import_names(
+			nested_import_names = get_import_names(
 				bytecode=dis.Bytecode(argval), import_names=import_names, visited_codes=visited_codes
 			)
-			for import_name, line_numbers in nested_imports_names.items():
+			for import_name, line_numbers in nested_import_names.items():
 				import_names[import_name].update(line_numbers)
 	return import_names
 
@@ -74,8 +74,10 @@ def get_import_source_path(import_name: str) -> str | None:
 	return spec.origin
 
 
-def check_import_path(import_path: str) -> bool:
+def check_import_path(import_path: str, ignore_installed: bool = True) -> bool:
 	if import_path in marked_import_sources:
+		return False
+	if ignore_installed and import_path.startswith(_LIB_FOLDER):
 		return False
 	marked_import_sources.add(import_path)
 	return True
@@ -90,7 +92,7 @@ def get_poison_context(filename: str = None):
 			return filename, frame.positions.lineno
 
 
-def poison(*names: list[str], filename: str = None, recursive: bool = True):
+def poison(*names: list[str], filename: str = None, ignore_installed: bool = True, recursive: bool = True):
 	poisoned_file, start_line = get_poison_context(filename=filename)
 	poisoned_names = set(names)
 	with tokenize.open(poisoned_file) as f:
@@ -107,17 +109,17 @@ def poison(*names: list[str], filename: str = None, recursive: bool = True):
 	marked_import_sources.add(poisoned_file)
 	if recursive:
 		file_bytecode = get_bytecode(poisoned_file)
-		imports = get_import_names(bytecode=file_bytecode)
-		filtered_imports = filter_import_names(import_names=imports, start_line=start_line)
+		import_names = get_import_names(bytecode=file_bytecode)
+		filtered_import_names = filter_import_names(import_names=import_names, start_line=start_line)
 
-		print(f'Checking imports: {filtered_imports}')
-		for import_name in filtered_imports:
+		print(f'Checking imports: {filtered_import_names}')
+		for import_name in filtered_import_names:
 			import_path = get_import_source_path(import_name)
 			print(f'{import_path = }')
 			if import_path is None:
 				continue
-			if check_import_path(import_path=import_path):
-				poison(*poisoned_names, filename=import_path, recursive=True)
+			if check_import_path(import_path=import_path, ignore_installed=ignore_installed):
+				poison(*poisoned_names, filename=import_path, ignore_installed=ignore_installed, recursive=True)
 
 
 if __name__ == '__main__':

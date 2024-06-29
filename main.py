@@ -17,5 +17,12 @@ import foo
 def foo():
     if True:
         import os
+    class Foo:
+        import lol
+
+    def foo():
+        class Bar:
+            class Baz:
+                import BAAAAAAAAAAAAAAAAAAR
 
 

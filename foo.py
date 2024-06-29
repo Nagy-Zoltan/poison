@@ -12,5 +12,6 @@ class Foo:
 
 
 
-    def X(self):
-        return self
+    def x(self):
+        import re
+        X
