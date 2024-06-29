@@ -102,7 +102,7 @@ def poison(*names: list[str], filename: str = None, ignore_installed: bool = Tru
 		for t in tokens:
 			if t.type == token.NAME and t.string in poisoned_names:
 				raise RuntimeError(
-					f'Poisoned name "{t.string}" found on line {start_line + t.start[0]}!'
+					f'Poisoned name "{t.string}" found on line {start_line + t.start[0]}! File: {poisoned_file}'
 				)
 
 	print(f'{poisoned_file} is clean')
@@ -123,4 +123,12 @@ def poison(*names: list[str], filename: str = None, ignore_installed: bool = Tru
 
 
 if __name__ == '__main__':
-	raise RuntimeError(f'"{__MODULE__}" module must be imported in an other file.')
+	if len(sys.argv) == 1:
+		raise RuntimeError(
+			f'Import "{__MODULE__}" module in an other file '
+			'or specify filename and poisoned names as command line arguments.'
+		)
+	else:
+		poisoned_file = sys.argv[1]
+		poisoned_names = [arg for arg in sys.argv[2:] if arg.isidentifier()]
+		poison(*poisoned_names, filename=poisoned_file)

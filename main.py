@@ -8,10 +8,11 @@ print('hello')
 import pickle
 
 abs
+from foo import Foo
 
 poison.poison('print', 'abs', 'X')
 
-import foo
+Foo.x
 
 
 def foo():
